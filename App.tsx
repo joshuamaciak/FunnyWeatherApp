@@ -9,7 +9,10 @@
  */
 
 import React, {Component} from 'react';
-import {Platform, StyleSheet, Text, View} from 'react-native';
+import {Platform, StyleSheet, Text, View, Button, Alert} from 'react-native';
+import CurrentWeather from './components/CurrentWeather';
+import WeatherService from './service/WeatherService';
+import CompleteWeatherUpdate from './model/CompleteWeatherUpdate';
 
 const instructions = Platform.select({
   ios: 'Press Cmd+R to reload,\n' + 'Cmd+D or shake for dev menu',
@@ -19,13 +22,42 @@ const instructions = Platform.select({
 });
 
 interface Props {}
-export default class App extends Component<Props> {
+class AppState {
+  weatherUpdate: CompleteWeatherUpdate;
+  constructor(weatherUpdate: CompleteWeatherUpdate) {
+    this.weatherUpdate = weatherUpdate;
+  }
+} 
+export default class App extends Component<Props, AppState> {
+  private weatherService: WeatherService;
+  private static LATITUDE  = 42.0610758;
+  private static LONGITUDE = -80.1578465;
+
+  constructor(props: Props) {
+    super(props);
+    this.weatherService = WeatherService.getInstance();
+    this.state = new AppState(CompleteWeatherUpdate.empty());
+
+  }
+
+  componentWillMount() {
+    this.refreshWeather();
+  }
+
+  private refreshWeather() {
+    this.weatherService.getWeatherUpdate(App.LATITUDE, App.LONGITUDE)
+    .then(response => {
+      // TODO: need to check response data to ensure it matches our model
+      this.setState(new AppState(response.data));
+    })
+  }
+
   render() {
     return (
       <View style={styles.container}>
-        <Text style={styles.welcome}>Hello, react native!</Text>
-        <Text style={styles.instructions}>To get started, edit App.tsx</Text>
-        <Text style={styles.instructions}>{instructions}</Text>
+        <Button title="Refresh Weather" 
+          onPress={() => {this.refreshWeather()}}/>
+        <CurrentWeather weatherUpdate={this.state.weatherUpdate}/>
       </View>
     );
   }
