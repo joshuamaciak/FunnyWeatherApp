@@ -57,7 +57,7 @@ export default class App extends Component<Props, AppState> {
       <View style={styles.container}>
         <Button title="Refresh Weather" 
           onPress={() => {this.refreshWeather()}}/>
-        <CurrentWeather weatherUpdate={this.state.weatherUpdate}/>
+        <CurrentWeather currentWeatherUpdate={this.state.weatherUpdate.current}/>
       </View>
     );
   }
