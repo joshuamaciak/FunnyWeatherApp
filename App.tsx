@@ -21,12 +21,20 @@ const instructions = Platform.select({
     'Shake or press menu button for dev menu',
 });
 
+class HttpStatus {
+  public static INTERNAL_SERVER_ERROR = 500;
+  public static TOO_MANY_REQUESTS = 429;
+}
+
 interface Props {}
 class AppState {
   weatherUpdate: CompleteWeatherUpdate;
-  constructor(weatherUpdate: CompleteWeatherUpdate) {
+  error: string;
+  constructor(weatherUpdate: CompleteWeatherUpdate, error: string) {
     this.weatherUpdate = weatherUpdate;
+    this.error = error;
   }
+  
 } 
 export default class App extends Component<Props, AppState> {
   private weatherService: WeatherService;
@@ -36,7 +44,7 @@ export default class App extends Component<Props, AppState> {
   constructor(props: Props) {
     super(props);
     this.weatherService = WeatherService.getInstance();
-    this.state = new AppState(CompleteWeatherUpdate.empty());
+    this.state = new AppState(CompleteWeatherUpdate.empty(), '');
 
   }
 
@@ -47,9 +55,30 @@ export default class App extends Component<Props, AppState> {
   private refreshWeather() {
     this.weatherService.getWeatherUpdate(App.LATITUDE, App.LONGITUDE)
     .then(response => {
-      // TODO: need to check response data to ensure it matches our model
-      this.setState(new AppState(response.data));
-    })
+      if (!CompleteWeatherUpdate.isInstance(response.data)) {
+        this.setState(new AppState(CompleteWeatherUpdate.empty(), 'Invalid response from api'));
+        return;
+      }
+      this.setState(new AppState(response.data, ''));
+    }).catch(error => {
+      let errorMessage = '';
+      if (error.response) {
+        switch(error.response.status) {
+          case HttpStatus.TOO_MANY_REQUESTS:
+            errorMessage = 'Rate limit reached';
+            break;
+          case HttpStatus.INTERNAL_SERVER_ERROR:
+            errorMessage = 'Internal server error';
+            break;
+          default:
+            errorMessage = `Http Status:${error.response.status}`;
+            break;
+        }
+      } else {
+        errorMessage = error.toString();
+      }
+      this.setState(new AppState(CompleteWeatherUpdate.empty(), errorMessage));
+    });
   }
 
   render() {
@@ -58,6 +87,7 @@ export default class App extends Component<Props, AppState> {
         <Button title="Refresh Weather" 
           onPress={() => {this.refreshWeather()}}/>
         <CurrentWeather currentWeatherUpdate={this.state.weatherUpdate.current}/>
+        <Text>{(this.state.error !== '') ? 'Error:' : ''}{this.state.error}</Text>
       </View>
     );
   }

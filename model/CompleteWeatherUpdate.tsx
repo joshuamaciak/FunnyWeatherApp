@@ -25,4 +25,15 @@ export default class CompleteWeatherUpdate {
         emptyUpdate.daily   = [];
         return emptyUpdate;
     }
+    /**
+     * A typeguard that checks to see if arg is an instance
+     * of CompleteWeatherUpdate
+     * @param arg 
+     */
+    public static isInstance(arg: any): arg is CompleteWeatherUpdate {
+        return (arg.timestamp !== undefined) && (arg.latitude !== undefined) 
+                && (arg.longitude !== undefined) && (arg.current !== undefined) 
+                && (arg.daily !== undefined); 
+
+    }
 }
